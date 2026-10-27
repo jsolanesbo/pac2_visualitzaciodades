@@ -1,551 +1,189 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ca">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <link rel="stylesheet" href="css/leaflet.css">
-        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
-        <link rel="stylesheet" href="css/qgis2web.css">
-        <link rel="stylesheet" href="css/fontawesome-all.min.css">
-        <link rel="stylesheet" href="css/leaflet.photon.css">
-        <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-        .dot-legend {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            vertical-align: middle;
-        }
-        .dd-control {
-            background: #fff;
-            color: #1d2733;
-            padding: 10px 14px;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.35);
-            font: 13px/1.6 "Helvetica Neue", Arial, sans-serif;
-        }
-        .dd-control label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        .dd-control input { margin: 0; }
-        .dd-title {
-            font-weight: bold;
-            margin: 6px 0 2px;
-        }
-        .dd-title:first-child { margin-top: 0; }
-        .dd-note {
-            margin-top: 6px;
-            font-size: 12px;
-            color: #5b6672;
-        }
-        </style>
-        <title>Població de Catalunya segons lloc de naixement, 2000 i 2022 (mapa interactiu)</title>
-    </head>
-    <body>
-        <div id="map">
-        </div>
-        <script src="js/qgis2web_expressions.js"></script>
-        <script src="js/leaflet.js"></script>
-        <script src="js/L.Control.Layers.Tree.min.js"></script>
-        <script src="js/leaflet.rotatedMarker.js"></script>
-        <script src="js/leaflet.pattern.js"></script>
-        <script src="js/leaflet-hash.js"></script>
-        <script src="js/Autolinker.min.js"></script>
-        <script src="js/rbush.min.js"></script>
-        <script src="js/labelgun.min.js"></script>
-        <script src="js/labels.js"></script>
-        <script src="js/leaflet.photon.js"></script>
-        <script src="data/municipis_poblacio_0.js"></script>
-        <script src="data/contorn_catalunya_1.js"></script>
-        <script src="data/Any2000_2.js"></script>
-        <script src="data/Any2022_3.js"></script>
-        <script>
-        var map = L.map('map', {
-            zoomControl:false, maxZoom:28, minZoom:1
-        }).fitBounds([[40.35200555448803,-0.5609457447478449],[43.061631154473666,3.8761154557294506]]);
-        var hash = new L.Hash(map);
-        map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
-        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
-        // remove popup's row if "visible-with-data"
-        function removeEmptyRowsFromPopupContent(content, feature) {
-         var tempDiv = document.createElement('div');
-         tempDiv.innerHTML = content;
-         var rows = tempDiv.querySelectorAll('tr');
-         for (var i = 0; i < rows.length; i++) {
-             var td = rows[i].querySelector('td.visible-with-data');
-             var key = td ? td.id : '';
-             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
-                 rows[i].parentNode.removeChild(rows[i]);
-             }
-         }
-         return tempDiv.innerHTML;
-        }
-        // modify popup if contains media
-        function addClassToPopupIfMedia(content, popup) {
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            var imgTd = tempDiv.querySelector('td img');
-            if (imgTd) {
-                var src = imgTd.getAttribute('src');
-                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
-                    popup._contentNode.classList.add('media');
-                    var img = popup._contentNode.querySelector('td img');
-                    if (img) {
-                        // If already loaded (cache), update immediately
-                        if (img.complete && img.naturalHeight > 0) {
-                            popup.update();
-                        } else {
-                            img.addEventListener('load', function() {
-                                popup.update();
-                            });
-                            img.addEventListener('error', function() {
-                                popup.update();
-                            });
-                        }
-                    }
-                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
-                    var audio = document.createElement('audio');
-                    audio.controls = true;
-                    audio.src = src;
-                    imgTd.parentNode.replaceChild(audio, imgTd);
-                    popup._contentNode.classList.add('media');
-                    setTimeout(function() {
-                        popup.setContent(tempDiv.innerHTML);
-                        popup.update();
-                    }, 10);
-                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
-                    var video = document.createElement('video');
-                    video.controls = true;
-                    video.src = src;
-                    video.style.width = "400px";
-                    video.style.height = "300px";
-                    video.style.maxHeight = "60vh";
-                    video.style.maxWidth = "60vw";
-                    imgTd.parentNode.replaceChild(video, imgTd);
-                    popup._contentNode.classList.add('media');
-                    // Aggiorna il popup quando il video carica i metadati
-                    video.addEventListener('loadedmetadata', function() {
-                        popup.update();
-                    });
-                    setTimeout(function() {
-                        popup.setContent(tempDiv.innerHTML);
-                        popup.update();
-                    }, 10);
-                } else {
-                    popup._contentNode.classList.remove('media');
-                }
-            } else {
-                popup._contentNode.classList.remove('media');
-            }
-        }
-        var zoomControl = L.control.zoom({
-            position: 'topleft'
-        }).addTo(map);
-        var bounds_group = new L.featureGroup([]);
-        function setBounds() {
-        }
-        function pop_municipis_poblacio_0(feature, layer) {
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['NOMMUNI'] !== null ? autolinker.link(String(feature.properties['NOMMUNI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <th scope="row">Nascuts a Catalunya (2000)</th>\
-                        <td>' + (feature.properties['p2000_nascuts_catalunya'] !== null ? autolinker.link(String(feature.properties['p2000_nascuts_catalunya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <th scope="row">Nascuts a Espanya (2000)</th>\
-                        <td>' + (feature.properties['p2000_nascuts_espanya'] !== null ? autolinker.link(String(feature.properties['p2000_nascuts_espanya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <th scope="row">Nascuts a l\'estranger (2000)</th>\
-                        <td>' + (feature.properties['p2000_nascuts_estranger'] !== null ? autolinker.link(String(feature.properties['p2000_nascuts_estranger']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <th scope="row">Nascuts a Catalunya (2022)</th>\
-                        <td>' + (feature.properties['p2022_nascuts_catalunya'] !== null ? autolinker.link(String(feature.properties['p2022_nascuts_catalunya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <th scope="row">Nascuts a Espanya (2022)</th>\
-                        <td>' + (feature.properties['p2022_nascuts_espanya'] !== null ? autolinker.link(String(feature.properties['p2022_nascuts_espanya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <th scope="row">Nascuts a l\'estranger (2022)</th>\
-                        <td>' + (feature.properties['p2022_nascuts_estranger'] !== null ? autolinker.link(String(feature.properties['p2022_nascuts_estranger']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                </table>';
-            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
-			layer.on('popupopen', function(e) {
-				addClassToPopupIfMedia(content, e.popup);
-			});
-			layer.bindPopup(content, { maxHeight: 400 });
-        }
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Com ha canviat l’origen de la població de Catalunya? | Dot Density Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #1d2733;
+    --muted: #5b6672;
+    --rule: #dde2e7;
+    --frame: #f3f5f7;
+    --cat: #2b7bba;
+    --esp: #e09a00;
+    --estr: #c8436e;
+    --serif: "Literata", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #161b21;
+      --ink: #e8ecf0;
+      --muted: #a3adb8;
+      --rule: #2e3742;
+      --frame: #1f262e;
+      --cat: #5aa2dc;
+      --esp: #f2b23a;
+      --estr: #e2729a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #161b21;
+    --ink: #e8ecf0;
+    --muted: #a3adb8;
+    --rule: #2e3742;
+    --frame: #1f262e;
+    --cat: #5aa2dc;
+    --esp: #f2b23a;
+    --estr: #e2729a;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+  header, main, footer {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+  }
+  header { padding-top: 2.5rem; }
+  .technique {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 0.4rem;
+  }
+  h1 {
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0;
+    max-width: 22ch;
+  }
+  .lede {
+    max-width: 40rem;
+    margin: 1rem 0 2rem;
+    color: var(--muted);
+  }
+  figure {
+    margin: 0;
+    background: var(--frame);
+    padding: clamp(0.5rem, 2vw, 1.25rem);
+    border-radius: 6px;
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 3px;
+  }
+  .below {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    margin: 2.25rem 0 3rem;
+  }
+  @media (min-width: 52rem) {
+    .below { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 3.5rem; }
+  }
+  h2 {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.6rem;
+  }
+  p { margin: 0 0 1rem; max-width: 40rem; }
+  .explore {
+    display: inline-block;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--paper);
+    background: var(--ink);
+    text-decoration: none;
+    padding: 0.75rem 1.2rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+  }
+  .explore:hover { opacity: 0.88; }
+  .explore:focus-visible, a:focus-visible {
+    outline: 3px solid var(--cat);
+    outline-offset: 3px;
+  }
+  .key {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+  }
+  .key li { display: flex; align-items: center; gap: 0.6rem; padding: 0.2rem 0; }
+  .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
+  .note { font-size: 0.95rem; color: var(--muted); }
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    padding-bottom: 2.5rem;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  footer p { max-width: none; margin-bottom: 0.4rem; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <p class="technique">Dot Density Map (mapa de densitat de punts)</p>
+  <h1>Com ha canviat l’origen de la població de Catalunya?</h1>
+  <p class="lede">Entre el 2000 i el 2022, la població nascuda a l’estranger s’ha multiplicat per 6,5 i ha deixat de concentrar-se a la costa i a l’àrea de Barcelona per estendre’s per tot el territori.</p>
+</header>
 
-        function style_municipis_poblacio_0_0() {
-            return {
-                pane: 'pane_municipis_poblacio_0',
-                opacity: 1,
-                color: 'rgba(217,217,217,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1, 
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(247,247,247,1.0)',
-                interactive: true,
-            }
-        }
-        map.createPane('pane_municipis_poblacio_0');
-        map.getPane('pane_municipis_poblacio_0').style.zIndex = 400;
-        map.getPane('pane_municipis_poblacio_0').style['mix-blend-mode'] = 'normal';
-        var layer_municipis_poblacio_0 = new L.geoJson(json_municipis_poblacio_0, {
-            attribution: '',
-            interactive: true,
-            dataVar: 'json_municipis_poblacio_0',
-            layerName: 'layer_municipis_poblacio_0',
-            pane: 'pane_municipis_poblacio_0',
-            onEachFeature: pop_municipis_poblacio_0,
-            style: style_municipis_poblacio_0_0,
-        });
-        bounds_group.addLayer(layer_municipis_poblacio_0);
-        map.addLayer(layer_municipis_poblacio_0);
-        function pop_contorn_catalunya_1(feature, layer) {
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['CODIMUNI'] !== null ? autolinker.link(String(feature.properties['CODIMUNI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['NOMMUNI'] !== null ? autolinker.link(String(feature.properties['NOMMUNI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['p2000_nascuts_catalunya'] !== null ? autolinker.link(String(feature.properties['p2000_nascuts_catalunya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['p2000_nascuts_espanya'] !== null ? autolinker.link(String(feature.properties['p2000_nascuts_espanya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['p2000_nascuts_estranger'] !== null ? autolinker.link(String(feature.properties['p2000_nascuts_estranger']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['p2022_nascuts_catalunya'] !== null ? autolinker.link(String(feature.properties['p2022_nascuts_catalunya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['p2022_nascuts_espanya'] !== null ? autolinker.link(String(feature.properties['p2022_nascuts_espanya']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['p2022_nascuts_estranger'] !== null ? autolinker.link(String(feature.properties['p2022_nascuts_estranger']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                </table>';
-            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
-			layer.on('popupopen', function(e) {
-				addClassToPopupIfMedia(content, e.popup);
-			});
-			layer.bindPopup(content, { maxHeight: 400 });
-        }
+<main>
+  <figure>
+    <img src="mapa_2000_2022.png" alt="Dos mapes de punts de Catalunya, dels anys 2000 i 2022, on cada punt representa 500 habitants i el color indica el lloc de naixement. El 2000 dominen els punts blaus (Catalunya) i taronja (Espanya), i els rosa (estranger) són escassos. El 2022 els punts rosa apareixen arreu del territori.">
+  </figure>
 
-        function style_contorn_catalunya_1_0() {
-            return {
-                pane: 'pane_contorn_catalunya_1',
-                opacity: 1,
-                color: 'rgba(59,59,59,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1.0, 
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(255,158,23,0.0)',
-                interactive: false,
-            }
-        }
-        map.createPane('pane_contorn_catalunya_1');
-        map.getPane('pane_contorn_catalunya_1').style.zIndex = 401;
-        map.getPane('pane_contorn_catalunya_1').style['mix-blend-mode'] = 'normal';
-        var layer_contorn_catalunya_1 = new L.geoJson(json_contorn_catalunya_1, {
-            attribution: '',
-            interactive: false,
-            dataVar: 'json_contorn_catalunya_1',
-            layerName: 'layer_contorn_catalunya_1',
-            pane: 'pane_contorn_catalunya_1',
-            onEachFeature: pop_contorn_catalunya_1,
-            style: style_contorn_catalunya_1_0,
-        });
-        bounds_group.addLayer(layer_contorn_catalunya_1);
-        map.addLayer(layer_contorn_catalunya_1);
-        function pop_Any2000_2(feature, layer) {
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['layer'] !== null ? autolinker.link(String(feature.properties['layer']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['path'] !== null ? autolinker.link(String(feature.properties['path']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['ordre_aleatori'] !== null ? autolinker.link(String(feature.properties['ordre_aleatori']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                </table>';
-            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
-			layer.on('popupopen', function(e) {
-				addClassToPopupIfMedia(content, e.popup);
-			});
-			layer.bindPopup(content, { maxHeight: 400 });
-        }
+  <div class="below">
+    <section>
+      <h2>Explora-ho de més a prop</h2>
+      <p>A l’escala de Catalunya, l’àrea metropolitana de Barcelona queda saturada de punts. Al mapa interactiu pots fer zoom a qualsevol zona, alternar entre els dos anys, mostrar o amagar cada lloc de naixement i clicar un municipi per veure quantes persones hi vivien segons on havien nascut.</p>
+      <a class="explore" href="interactiu/index.html">Obre el mapa interactiu</a>
+    </section>
 
-        function style_Any2000_2_0(feature) {
-            switch(String(feature.properties['layer'])) {
-                case 'punts_2000_catalunya':
-                    return {
-                pane: 'pane_Any2000_2',
-                radius: 1.6,
-                opacity: 1,
-                color: 'rgba(35,35,35,0.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(40,120,181,1.0)',
-                interactive: false,
-            }
-                    break;
-                case 'punts_2000_espanya':
-                    return {
-                pane: 'pane_Any2000_2',
-                radius: 1.6,
-                opacity: 1,
-                color: 'rgba(35,35,35,0.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(230,159,0,1.0)',
-                interactive: false,
-            }
-                    break;
-                case 'punts_2000_estranger':
-                    return {
-                pane: 'pane_Any2000_2',
-                radius: 1.6,
-                opacity: 1,
-                color: 'rgba(35,35,35,0.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(204,70,120,1.0)',
-                interactive: false,
-            }
-                    break;
-            }
-        }
-        map.createPane('pane_Any2000_2');
-        map.getPane('pane_Any2000_2').style.zIndex = 402;
-        map.getPane('pane_Any2000_2').style['mix-blend-mode'] = 'normal';
-        var layer_Any2000_2 = new L.geoJson(json_Any2000_2, {
-            attribution: '',
-            interactive: false,
-            dataVar: 'json_Any2000_2',
-            layerName: 'layer_Any2000_2',
-            pane: 'pane_Any2000_2',
-            
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Any2000_2_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Any2000_2);
-        function pop_Any2022_3(feature, layer) {
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['layer'] !== null ? autolinker.link(String(feature.properties['layer']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['path'] !== null ? autolinker.link(String(feature.properties['path']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['ordre_aleatori'] !== null ? autolinker.link(String(feature.properties['ordre_aleatori']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                </table>';
-            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
-			layer.on('popupopen', function(e) {
-				addClassToPopupIfMedia(content, e.popup);
-			});
-			layer.bindPopup(content, { maxHeight: 400 });
-        }
+    <section>
+      <h2>Com llegir el mapa</h2>
+      <ul class="key">
+        <li><span class="dot" style="background: var(--cat)"></span>Nascuts a Catalunya</li>
+        <li><span class="dot" style="background: var(--esp)"></span>Nascuts a Espanya</li>
+        <li><span class="dot" style="background: var(--estr)"></span>Nascuts a l’estranger</li>
+      </ul>
+      <p class="note">Cada punt representa 500 habitants. Els punts es col·loquen a l’atzar dins de cada municipi: el que és fiable és el nombre de punts de cada municipi, no la posició exacta de cada un.</p>
+    </section>
+  </div>
+</main>
 
-        function style_Any2022_3_0(feature) {
-            switch(String(feature.properties['layer'])) {
-                case 'punts_2022_catalunya':
-                    return {
-                pane: 'pane_Any2022_3',
-                radius: 1.6,
-                opacity: 1,
-                color: 'rgba(35,35,35,0.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(40,120,181,1.0)',
-                interactive: false,
-            }
-                    break;
-                case 'punts_2022_espanya':
-                    return {
-                pane: 'pane_Any2022_3',
-                radius: 1.6,
-                opacity: 1,
-                color: 'rgba(35,35,35,0.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(230,159,0,1.0)',
-                interactive: false,
-            }
-                    break;
-                case 'punts_2022_estranger':
-                    return {
-                pane: 'pane_Any2022_3',
-                radius: 1.6,
-                opacity: 1,
-                color: 'rgba(35,35,35,0.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(204,70,120,1.0)',
-                interactive: false,
-            }
-                    break;
-            }
-        }
-        map.createPane('pane_Any2022_3');
-        map.getPane('pane_Any2022_3').style.zIndex = 403;
-        map.getPane('pane_Any2022_3').style['mix-blend-mode'] = 'normal';
-        var layer_Any2022_3 = new L.geoJson(json_Any2022_3, {
-            attribution: '',
-            interactive: false,
-            dataVar: 'json_Any2022_3',
-            layerName: 'layer_Any2022_3',
-            pane: 'pane_Any2022_3',
-            
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Any2022_3_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Any2022_3);
-        map.addLayer(layer_Any2022_3);
-        // Control propi: un sol any visible i categories activables
-        var yearLayers = {'2022': layer_Any2022_3, '2000': layer_Any2000_2};
-        var styleFns = {'2022': style_Any2022_3_0, '2000': style_Any2000_2_0};
-        var categories = [
-            {key: 'catalunya', label: 'Catalunya', color: 'rgb(40,120,181)'},
-            {key: 'espanya', label: 'Espanya', color: 'rgb(230,159,0)'},
-            {key: 'estranger', label: 'Estranger', color: 'rgb(204,70,120)'}
-        ];
-        var visibleCats = {catalunya: true, espanya: true, estranger: true};
-        var currentYear = '2022';
-
-        function categoryOf(feature) {
-            return String(feature.properties['layer']).split('_').pop();
-        }
-        function applyCategories() {
-            var layer = yearLayers[currentYear];
-            var styleFn = styleFns[currentYear];
-            layer.eachLayer(function (marker) {
-                if (visibleCats[categoryOf(marker.feature)]) {
-                    marker.setStyle(styleFn(marker.feature));
-                } else {
-                    marker.setStyle({opacity: 0, fillOpacity: 0});
-                }
-            });
-        }
-        function showYear(year) {
-            if (year === currentYear) return;
-            map.removeLayer(yearLayers[currentYear]);
-            currentYear = year;
-            map.addLayer(yearLayers[currentYear]);
-            applyCategories();
-        }
-
-        var DotControl = L.Control.extend({
-            options: {position: 'topright'},
-            onAdd: function () {
-                var div = L.DomUtil.create('div', 'dd-control');
-                var html = '<div class="dd-title">Any</div>' +
-                    '<label><input type="radio" name="dd-year" value="2022" checked> 2022</label>' +
-                    '<label><input type="radio" name="dd-year" value="2000"> 2000</label>' +
-                    '<div class="dd-title">Lloc de naixement</div>';
-                categories.forEach(function (c) {
-                    html += '<label><input type="checkbox" class="dd-cat" value="' + c.key + '" checked>' +
-                        '<span class="dot-legend" style="background:' + c.color + '"></span> ' + c.label + '</label>';
-                });
-                html += '<div class="dd-note">1 punt = 500 habitants</div>';
-                div.innerHTML = html;
-                L.DomEvent.disableClickPropagation(div);
-                L.DomEvent.disableScrollPropagation(div);
-                div.querySelectorAll('input[name="dd-year"]').forEach(function (input) {
-                    input.addEventListener('change', function () { showYear(this.value); });
-                });
-                div.querySelectorAll('.dd-cat').forEach(function (input) {
-                    input.addEventListener('change', function () {
-                        visibleCats[this.value] = this.checked;
-                        applyCategories();
-                    });
-                });
-                return div;
-            }
-        });
-        new DotControl().addTo(map);
-        setBounds();
-        </script>
-    </body>
+<footer>
+  <p>Dades: Idescat, Padró municipal d’habitants (2000 i 2022), població segons lloc de naixement. Límits municipals: Institut Cartogràfic i Geològic de Catalunya (ICGC).</p>
+  <p>Elaboració pròpia amb QGIS. PAC2, Visualització de dades.</p>
+</footer>
+</body>
 </html>
