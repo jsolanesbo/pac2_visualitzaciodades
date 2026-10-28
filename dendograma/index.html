@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Com es classifiquen els mamífers de Catalunya? | Circular dendrogram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #1d2733;
+    --muted: #5b6672;
+    --rule: #dde2e7;
+    --frame: #f3f5f7;
+    --cat: #2b7bba;
+    --esp: #e09a00;
+    --estr: #c8436e;
+    --serif: "Literata", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #161b21;
+      --ink: #e8ecf0;
+      --muted: #a3adb8;
+      --rule: #2e3742;
+      --frame: #1f262e;
+      --cat: #5aa2dc;
+      --esp: #f2b23a;
+      --estr: #e2729a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #161b21;
+    --ink: #e8ecf0;
+    --muted: #a3adb8;
+    --rule: #2e3742;
+    --frame: #1f262e;
+    --cat: #5aa2dc;
+    --esp: #f2b23a;
+    --estr: #e2729a;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+  header, main, footer {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+  }
+  header { padding-top: 2.5rem; }
+  .technique {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 0.4rem;
+  }
+  h1 {
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0;
+    max-width: 22ch;
+  }
+  .lede {
+    max-width: 40rem;
+    margin: 1rem 0 2rem;
+    color: var(--muted);
+  }
+  figure {
+    margin: 0;
+    background: var(--frame);
+    padding: clamp(0.5rem, 2vw, 1.25rem);
+    border-radius: 6px;
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 3px;
+  }
+  .below {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    margin: 2.25rem 0 3rem;
+  }
+  @media (min-width: 52rem) {
+    .below { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 3.5rem; }
+  }
+  h2 {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.6rem;
+  }
+  p { margin: 0 0 1rem; max-width: 40rem; }
+  .explore {
+    display: inline-block;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--paper);
+    background: var(--ink);
+    text-decoration: none;
+    padding: 0.75rem 1.2rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+  }
+  .explore:hover { opacity: 0.88; }
+  .explore:focus-visible, a:focus-visible {
+    outline: 3px solid var(--cat);
+    outline-offset: 3px;
+  }
+  .key {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+  }
+  .key li { display: flex; align-items: center; gap: 0.6rem; padding: 0.2rem 0; }
+  .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
+  .note { font-size: 0.95rem; color: var(--muted); }
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    padding-bottom: 2.5rem;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  footer p { max-width: none; margin-bottom: 0.4rem; }
+  footer a { color: inherit; }
+  .key .dot { border: 1px solid rgba(0,0,0,0.15); }
+  .subtitle {
+    font-family: var(--sans);
+    font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+    font-weight: 600;
+    margin: 0.6rem 0 0;
+  }
+  .full { font-family: var(--sans); font-size: 0.9rem; margin: 0.75rem 0 0; }
+  .full a { color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <p class="technique">Circular dendrogram (dendrograma circular)</p>
+  <h1>Com es classifiquen els mamífers de Catalunya?</h1>
+  <p class="subtitle">Gairebé un de cada tres és un ratpenat</p>
+  <p class="lede">Dels 100 mamífers salvatges de la llista oficial de Catalunya, 30 són ratpenats: l’ordre més nombrós, per davant dels rosegadors (20) i dels carnívors (15). I tots tenen alguna figura de protecció.</p>
+</header>
+
+<main>
+  <figure>
+    <img src="mamifers_catalunya.svg" alt="Dendrograma circular dels 100 mamífers de Catalunya, classificats per ordre, família, gènere i espècie. La branca dels quiròpters (ratpenats), amb 30 espècies, ocupa gairebé un terç del cercle, i la majoria de les seves espècies estan marcades com a protegides o vulnerables.">
+  </figure>
+  <p class="full"><a href="mamifers_catalunya.svg">Obre el gràfic a mida completa</a> per llegir-ne millor les etiquetes.</p>
+
+  <div class="below">
+    <section>
+      <h2>Com llegir el gràfic</h2>
+      <p>L’arrel, al centre, representa tots els mamífers. Les branques es divideixen successivament en ordres, famílies i gèneres fins arribar a les espècies, situades a la circumferència exterior. Com més espècies té un grup, més part del cercle ocupa. Els arcs exteriors indiquen cada ordre i el nombre d’espècies que inclou.</p>
+      <p>El color de cada espècie mostra la seva categoria al catàleg de fauna amenaçada de Catalunya.</p>
+    </section>
+
+    <section>
+      <h2>Categoria de protecció</h2>
+      <ul class="key">
+        <li><span class="dot" style="background: #c8c8c8"></span>Sense protecció específica</li>
+        <li><span class="dot" style="background: #4daf7c"></span>Protegida</li>
+        <li><span class="dot" style="background: #f2b134"></span>Vulnerable</li>
+        <li><span class="dot" style="background: #d7263d"></span>En perill d’extinció</li>
+        <li><span class="dot" style="background: #333333"></span>Extinta com a reproductora</li>
+      </ul>
+    </section>
+  </div>
+
+</main>
+
+<footer>
+  <p>Dades: Generalitat de Catalunya, Llista patró dels mamífers de Catalunya (2021), per a la classificació taxonòmica; i portal de dades obertes de la Generalitat, Espècies protegides i amenaçades de la fauna autòctona a Catalunya, per a la categoria de protecció.</p>
+  <p>Elaboració pròpia amb RAWGraphs. PAC2, Visualització de dades.</p>
+</footer>
+</body>
+</html>
