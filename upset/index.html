@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quins països europeus comparteixen organitzacions? | UpSet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #1d2733;
+    --muted: #5b6672;
+    --rule: #dde2e7;
+    --frame: #f3f5f7;
+    --cat: #2b7bba;
+    --esp: #e09a00;
+    --estr: #c8436e;
+    --serif: "Literata", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #161b21;
+      --ink: #e8ecf0;
+      --muted: #a3adb8;
+      --rule: #2e3742;
+      --frame: #1f262e;
+      --cat: #5aa2dc;
+      --esp: #f2b23a;
+      --estr: #e2729a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #161b21;
+    --ink: #e8ecf0;
+    --muted: #a3adb8;
+    --rule: #2e3742;
+    --frame: #1f262e;
+    --cat: #5aa2dc;
+    --esp: #f2b23a;
+    --estr: #e2729a;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+  header, main, footer {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+  }
+  header { padding-top: 2.5rem; }
+  .technique {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 0.4rem;
+  }
+  h1 {
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0;
+    max-width: 22ch;
+  }
+  .lede {
+    max-width: 40rem;
+    margin: 1rem 0 2rem;
+    color: var(--muted);
+  }
+  figure {
+    margin: 0;
+    background: var(--frame);
+    padding: clamp(0.5rem, 2vw, 1.25rem);
+    border-radius: 6px;
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 3px;
+  }
+  .below {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    margin: 2.25rem 0 3rem;
+  }
+  @media (min-width: 52rem) {
+    .below { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 3.5rem; }
+  }
+  h2 {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.6rem;
+  }
+  p { margin: 0 0 1rem; max-width: 40rem; }
+  .explore {
+    display: inline-block;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--paper);
+    background: var(--ink);
+    text-decoration: none;
+    padding: 0.75rem 1.2rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+  }
+  .explore:hover { opacity: 0.88; }
+  .explore:focus-visible, a:focus-visible {
+    outline: 3px solid var(--cat);
+    outline-offset: 3px;
+  }
+  .key {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+  }
+  .key li { display: flex; align-items: center; gap: 0.6rem; padding: 0.2rem 0; }
+  .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
+  .note { font-size: 0.95rem; color: var(--muted); }
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    padding-bottom: 2.5rem;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  footer p { max-width: none; margin-bottom: 0.4rem; }
+  footer a { color: inherit; }
+  .key .dot { border: 1px solid rgba(0,0,0,0.15); }
+  .subtitle {
+    font-family: var(--sans);
+    font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+    font-weight: 600;
+    margin: 0.6rem 0 0;
+  }
+  .full { font-family: var(--sans); font-size: 0.9rem; margin: 0.75rem 0 0; }
+  .full a { color: var(--ink); }
+  .viz {
+    max-width: 84rem;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+  }
+  .viz iframe {
+    display: block;
+    width: 100%;
+    height: 780px;
+    border: 0;
+    border-radius: 3px;
+    background: #ffffff;
+  }
+  dl.sets { margin: 0 0 1rem; font-family: var(--sans); font-size: 0.95rem; }
+  dl.sets div { display: flex; gap: 0.6rem; padding: 0.2rem 0; }
+  dl.sets dt { font-weight: 600; min-width: 4.5rem; }
+  dl.sets dd { margin: 0; color: var(--muted); }
+  ul.sources { padding-left: 1.1rem; margin: 0.3rem 0 0; }
+  ul.sources li { margin-bottom: 0.2rem; }
+</style>
+</head>
+<body>
+<header>
+  <p class="technique">UpSet: visualització de conjunts que s’intersequen</p>
+  <h1>Quins països europeus comparteixen organitzacions?</h1>
+  <p class="subtitle">Només 17 dels 50 països són alhora a la UE, l’euro, Schengen, l’EEE i l’OTAN</p>
+  <p class="lede">La integració europea no és un bloc únic: entre 50 països i sis organitzacions apareixen 11 combinacions diferents. Nou països no formen part de cap, i hi ha casos singulars com Montenegro, que fa servir l’euro i és a l’OTAN sense ser a la UE, o Suïssa, que és a Schengen però no a la UE.</p>
+</header>
+
+<div class="viz">
+  <figure>
+    <iframe src="https://upset.multinet.app/embed?workspace=PAC2_UpSet&amp;table=paisos_europeus_organitzacions&amp;sessionId=51778&amp;showSettings=0&amp;sidebar=EV" title="Gràfic UpSet interactiu de la pertinença de 50 països europeus a sis organitzacions internacionals" loading="lazy"></iframe>
+  </figure>
+  <p class="full"><a href="https://upset.multinet.app/embed?workspace=PAC2_UpSet&amp;table=paisos_europeus_organitzacions&amp;sessionId=51778&amp;showSettings=0&amp;sidebar=EV" target="_blank" rel="noopener">Obre el gràfic a pantalla completa</a></p>
+</div>
+
+<main>
+  <div class="below">
+    <section>
+      <h2>Com llegir el gràfic</h2>
+      <p>Cada fila és una combinació d’organitzacions. Els punts negres units indiquen de quines organitzacions formen part els països d’aquella fila, i la barra horitzontal mostra quants països hi ha. Les barres verticals de dalt indiquen el nombre total de membres de cada organització.</p>
+      <p>Fes clic en una fila del gràfic i, al panell de la dreta, apareixerà la llista dels països que formen aquella combinació.</p>
+    </section>
+
+    <section>
+      <h2>Les sis organitzacions</h2>
+      <dl class="sets">
+        <div><dt>UE</dt><dd>Unió Europea</dd></div>
+        <div><dt>Euro</dt><dd>L’euro és la moneda oficial, també fora de la UE</dd></div>
+        <div><dt>Schengen</dt><dd>Espai sense controls fronterers interns</dd></div>
+        <div><dt>EEE</dt><dd>Espai Econòmic Europeu</dd></div>
+        <div><dt>OTAN</dt><dd>Només els membres europeus</dd></div>
+        <div><dt>AELC</dt><dd>Associació Europea de Lliure Comerç</dd></div>
+      </dl>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p>Països inclosos: els 46 estats membres del Consell d’Europa, més Rússia, Bielorússia, la Ciutat del Vaticà i Kosovo. Dades actualitzades a octubre de 2026.</p>
+  <p>Fonts oficials:</p>
+  <ul class="sources">
+    <li><a href="https://www.coe.int/en/web/portal/46-members-states">Consell d’Europa</a></li>
+    <li><a href="https://european-union.europa.eu/principles-countries-history/eu-countries_en">Unió Europea</a></li>
+    <li><a href="https://european-union.europa.eu/institutions-law-budget/euro/countries-using-euro_en">Països que fan servir l’euro</a></li>
+    <li><a href="https://home-affairs.ec.europa.eu/policies/schengen/schengen-area_en">Espai Schengen</a></li>
+    <li><a href="https://www.nato.int/cps/en/natohq/nato_countries.htm">OTAN</a></li>
+    <li><a href="https://www.efta.int/eea">EEE i AELC</a></li>
+  </ul>
+  <p>Elaboració pròpia amb UpSet 2.0 (Multinet). PAC2, Visualització de dades.</p>
+</footer>
+</body>
+</html>
